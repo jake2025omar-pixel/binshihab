@@ -6,6 +6,7 @@ const mysql = require('mysql2/promise');
 
 const PORT = Number(process.env.PORT || 3000);
 const ROOT = __dirname;
+const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const memory = new Map();
 let pool = null;
@@ -16,9 +17,10 @@ function now() { return new Date().toISOString(); }
 function validProfileId(value) { return typeof value === 'string' && UUID_RE.test(value); }
 function cleanName(value) { return String(value || '').trim().replace(/\s+/g, ' ').slice(0, 80); }
 function cleanTitle(value) { return String(value || '').trim().replace(/\s+/g, ' ').slice(0, 160); }
+function corsHeaders() { return { 'access-control-allow-origin': CORS_ORIGIN, 'access-control-allow-methods': 'GET,POST,PATCH,DELETE,OPTIONS', 'access-control-allow-headers': 'content-type' }; }
 function json(res, status, payload) {
   const body = JSON.stringify(payload);
-  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
+  res.writeHead(status, { ...corsHeaders(), 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
   res.end(body);
 }
 function error(res, status, message, code = 'bad_request') { json(res, status, { error: { code, message } }); }
@@ -165,6 +167,7 @@ function staticFile(req, res, pathname) {
 
 async function handler(req, res) {
   const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+  if (req.method === 'OPTIONS') { res.writeHead(204, corsHeaders()); return res.end(); }
   if (req.method === 'GET' && url.pathname === '/api/health') return json(res, 200, { ok: true, storage: storageMode, time: now() });
   if (url.pathname === '/api/state' && req.method === 'GET') { const result = await state(url.searchParams.get('profileId')); return result ? json(res, 200, result) : error(res, 404, 'الملف الشخصي غير موجود', 'profile_not_found'); }
   if (url.pathname === '/api/profile' && req.method === 'POST') { const body = await parseBody(req); const result = await createOrUpdateProfile(body.profileId, cleanName(body.name)); return result ? json(res, 200, result) : error(res, 400, 'أدخل اسمًا صالحًا للمتابعة'); }

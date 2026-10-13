@@ -36,7 +36,8 @@
   let toastTimer;
   const $ = id => document.getElementById(id);
   function showToast(message){ const toast=$('toast'); toast.textContent=message; toast.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>toast.classList.remove('show'),3200); }
-  function api(path, options={}){ return fetch(path, { ...options, headers:{'content-type':'application/json', ...(options.headers||{})} }).then(async response=>{ const body=await response.json().catch(()=>({})); if(!response.ok) throw new Error(body.error?.message || 'تعذر الاتصال بالخادم'); return body; }); }
+  const API_ORIGIN = location.hostname.endsWith('github.io') ? 'https://8328-imgucxtiyilt7t0aj83i1-0883e2a7.us4.manus.computer' : '';
+  function api(path, options={}){ return fetch(`${API_ORIGIN}${path}`, { ...options, headers:{'content-type':'application/json', ...(options.headers||{})} }).then(async response=>{ const body=await response.json().catch(()=>({})); if(!response.ok) throw new Error(body.error?.message || 'تعذر الاتصال بالخادم'); return body; }); }
   function setConnection(online, label){ $('statusDot').classList.toggle('online', online); $('statusText').textContent=label; }
   function openProfile(){ const dialog=$('profileDialog'); if(!dialog.open) dialog.showModal(); $('nameInput').focus(); }
   function render(){
